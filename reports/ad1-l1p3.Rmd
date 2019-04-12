@@ -26,3 +26,13 @@ dados_parlamentares = read_projectdata()
 Nesse documento, faremos uma análise exploratória nos dados coletados dos perfis do Twitter dos parlamentares.
 
 # Perguntas
+
+## 1. Qual a casa com o maior engajamento_total (médio)? (Ou seja, qual a casa que tem maior engajamento por parlamentar?) A câmara ganha nesse quesito.
+
+Os dados estão sendo muito influenciados por valores extremos.
+
+Agrupando os dados por casa e calculando média e mediana dos engajamentos totais, assim:
+```{r}
+dados_parlamentares_casa = dados_parlamentares %>% group_by(casa) %>%
+  summarise(media_engaj_total = mean(engaj_total), mediana_engaj_total = median(engaj_total))
+```
