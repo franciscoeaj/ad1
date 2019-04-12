@@ -1,0 +1,28 @@
+---
+title: "Lab. 01 - Parte 3 - AD1/CDD"
+author: "Francisco E. Júnior, Raoni Smaneoto"
+date: "12 de abril de 2019"
+output:
+    html_document:
+      df_print: paged
+      toc: true
+      toc_float:
+        collapsed: false
+theme: sandstone
+---
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(plotly)
+source(here::here("code/lib.R"))
+theme_set(theme_bw())
+```
+
+```{r read}
+dados_parlamentares = read_projectdata()
+```
+
+# Introdução
+Nesse documento, faremos uma análise exploratória nos dados coletados dos perfis do Twitter dos parlamentares.
+
+# Perguntas
