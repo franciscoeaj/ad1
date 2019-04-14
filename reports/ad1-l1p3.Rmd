@@ -19,7 +19,7 @@ theme_set(theme_bw())
 ```
 
 ```{r read}
-dados_parlamentares = read_projectdata()
+atividade = read_projectdata()
 ```
 
 # Introdução
@@ -27,12 +27,25 @@ Nesse documento, faremos uma análise exploratória nos dados coletados dos perf
 
 # Perguntas
 
-## 1. Qual a casa com o maior engajamento_total (médio)? (Ou seja, qual a casa que tem maior engajamento por parlamentar?) A câmara ganha nesse quesito.
+## 1. Qual a casa com o maior engajamento total médio? (Ou seja, qual a casa que tem maior engajamento por parlamentar?)
 
-Os dados estão sendo muito influenciados por valores extremos.
-
-Agrupando os dados por casa e calculando média e mediana dos engajamentos totais, assim:
+Agrupando os dados por casa, ignorando parlamentares sem engajamento total (engaj_total = NA) e calculando média e mediana dos engajamentos totais, assim:
 ```{r}
 dados_parlamentares_casa = dados_parlamentares %>% group_by(casa) %>%
-  summarise(media_engaj_total = mean(engaj_total), mediana_engaj_total = median(engaj_total))
+  filter(!is.na(engaj_total)) %>% summarise(media_engaj_total = mean(engaj_total), mediana_engaj_total = median(engaj_total))
+
+grafico_dados_parlamentares_casa = dados_parlamentares_casa %>% 
+  plot_ly(
+    x = ~casa,
+    y = ~media_engaj_total
+  ) %>% 
+  add_bars() %>%
+  layout(
+    title = "Engajamento total médio por casa",
+    xaxis = list(title = "Casa"),
+    yaxis = list(title = "Engajamento total médio")
+  )
+
+grafico_dados_parlamentares_casa
 ```
+Podemos ver que, em média, o engajamento da câmara é superior ao do senado em algo em torno dos 20 mil. Isto é, em média, o conteúdo produzido pelos parlamentares da câmara tem algo em torno de 20 mil curtidas e comentários a mais que o conteúdo produzido pelos parlamentares do senado.
