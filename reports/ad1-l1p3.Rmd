@@ -19,7 +19,7 @@ theme_set(theme_bw())
 ```
 
 ```{r read}
-atividade = read_projectdata()
+dados_parlamentares = read_projectdata()
 ```
 
 # Introdução
