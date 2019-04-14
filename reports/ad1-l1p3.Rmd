@@ -48,4 +48,4 @@ grafico_dados_parlamentares_casa = dados_parlamentares_casa %>%
 
 grafico_dados_parlamentares_casa
 ```
-Podemos ver que, em média, o engajamento da câmara é superior ao do senado em algo em torno dos 20 mil. Isto é, em média, o conteúdo produzido pelos parlamentares da câmara tem algo em torno de 20 mil curtidas e comentários a mais que o conteúdo produzido pelos parlamentares do senado.
+Podemos ver que, em média, o engajamento da câmara é superior ao do senado em algo em torno dos 20 mil. Isto é, em média, o conteúdo produzido pelos parlamentares da câmara tem algo em torno de 20 mil curtidas e retweets a mais que o conteúdo produzido pelos parlamentares do senado.
