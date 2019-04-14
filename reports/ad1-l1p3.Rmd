@@ -49,3 +49,34 @@ grafico_dados_parlamentares_casa = dados_parlamentares_casa %>%
 grafico_dados_parlamentares_casa
 ```
 Podemos ver que, em média, o engajamento da câmara é superior ao do senado em algo em torno dos 20 mil. Isto é, em média, o conteúdo produzido pelos parlamentares da câmara tem algo em torno de 20 mil curtidas e retweets a mais que o conteúdo produzido pelos parlamentares do senado.
+
+## 2. Qual a quantidade de conteúdo postado por partido?
+Definindo conteúdo postado como a soma do conteúdo criado e o conteúdo compartilhado, vamos criar a coluna n_total no dataset, da seguinte forma:
+```{r}
+dados_parlamentares$n_total <- dados_parlamentares$n_proprio + dados_parlamentares$n_retweet
+```
+
+Também iremos considerar apenas parlamentares que possuam um perfil e tenham postado algo (de autoria própria ou comentando/retweetando). Sendo assim, vamos filtrar o conjunto de dados dos parlamentares:
+```{r}
+dados_parlamentares_filtrado = subset(dados_parlamentares, !is.na(twitter) & n_total > 0)
+```
+
+Fazendo o agrupamento por partido e ordenando os dados de maneira decrescente, temos:
+```{r}
+dados_partidos = dados_parlamentares %>% group_by(partido) %>% summarise(tweets = sum(n_total)) %>% arrange(desc(tweets))
+```
+
+Agora, tratando um pouco o conjunto de dados dos partidos (removendo colunas NA em partido ou tweets), ordenando-o e plotando os dados:
+```{r}
+dados_partidos_filtrado = subset(dados_partidos, !is.na(partido) & !is.na(tweets))
+
+dados_partidos_filtrado$partido <- factor(dados_partidos_filtrado$partido, levels = unique(dados_partidos_filtrado$partido)[order(dados_partidos_filtrado$tweets, decreasing = TRUE)])
+
+grafico_partidos_x_tweets <- dados_partidos_filtrado %>% 
+  plot_ly(x = ~partido, y = ~tweets) %>%
+  layout(title = "Quantidade de tweets por partido", xaxis = list(title = "Partido"), yaxis = list(title = "Núm. tweets")) %>%
+  add_bars()
+
+grafico_partidos_x_tweets
+```
+Conseguimos observar que a quantidade de tweets por partido segue basicamente um padrão onde os maiores partidos do nosso país (como PT, PODE, PSOL) possuem uma quantidade de tweets bem superior a partidos menores como REDE, PATRI, PV, DC, PPL, conforme esperado.
