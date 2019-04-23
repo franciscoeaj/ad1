@@ -52,4 +52,3 @@ atividade_perfis = perfis %>%
 
 atividade_perfis %>% 
   write_csv(here::here("data/atividade-por-perfil-20190322.csv"))
-

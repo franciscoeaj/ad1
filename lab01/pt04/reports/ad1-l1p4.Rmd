@@ -1,7 +1,7 @@
 ---
-title: "Lab. 01 - Parte 3 - AD1/CDD"
-author: "Francisco E. Júnior, Raoni Smaneoto"
-date: "12 de abril de 2019"
+title: "Lab. 01 - Parte 4 - AD1/CDD"
+author: Francisco Edeverton de Almeida Júnior
+date: "22 de abril de 2019"
 output:
     html_document:
       df_print: paged
@@ -23,60 +23,85 @@ dados_parlamentares = read_projectdata()
 ```
 
 # Introdução
-Nesse documento, faremos uma análise exploratória nos dados coletados dos perfis do Twitter dos parlamentares.
+Farei uma análise exploratória nos dados coletados dos perfis do Twitter dos parlamentares. Na parte 4 desse laboratório, irei explorar a correlação entre algumas variáveis do nosso cojunto de dados.
+
+Ao fazer as correlações, utilizarei os métodos de Pearson, Spearman e Kendall. Para não gerar uma poluição aqui no texto e caso seja de interesse do leitor, o mesmo pode ler sobre esses coeficientes nos links abaixo:
+
+* [Coeficiente de Pearson](https://pt.wikipedia.org/wiki/Coeficiente_de_correla%C3%A7%C3%A3o_de_Pearson)
+* [Coeficiente de Spearman](https://pt.wikipedia.org/wiki/Coeficiente_de_correla%C3%A7%C3%A3o_de_postos_de_Spearman)
+* [Coeficiente de Kendall](https://pt.wikipedia.org/wiki/Coeficiente_de_correla%C3%A7%C3%A3o_tau_de_Kendall)
 
 # Perguntas
-
-## 1. Qual a casa com o maior engajamento total médio? (Ou seja, qual a casa que tem maior engajamento por parlamentar?)
-
-Agrupando os dados por casa, ignorando parlamentares sem engajamento total (engaj_total = NA) e calculando média e mediana dos engajamentos totais, assim:
-```{r}
-dados_parlamentares_casa = dados_parlamentares %>% group_by(casa) %>%
-  filter(!is.na(engaj_total)) %>% summarise(media_engaj_total = mean(engaj_total), mediana_engaj_total = median(engaj_total))
-
-grafico_dados_parlamentares_casa = dados_parlamentares_casa %>% 
-  plot_ly(
-    x = ~casa,
-    y = ~media_engaj_total
-  ) %>% 
-  add_bars() %>%
-  layout(
-    title = "Engajamento total médio por casa",
-    xaxis = list(title = "Casa"),
-    yaxis = list(title = "Engajamento total médio")
-  )
-
-grafico_dados_parlamentares_casa
-```
-Podemos ver que, em média, o engajamento da câmara é superior ao do senado em algo em torno dos 20 mil. Isto é, em média, o conteúdo produzido pelos parlamentares da câmara tem algo em torno de 20 mil curtidas e retweets a mais que o conteúdo produzido pelos parlamentares do senado.
-
-## 2. Qual a quantidade de conteúdo postado por partido?
-Definindo conteúdo postado como a soma do conteúdo criado e o conteúdo compartilhado, vamos criar a coluna n_total no dataset, da seguinte forma:
+Inicialmente, irei fazer o somatório da quantidade de conteúdo total compartilhada por parlamentar (i.e. a quantidade de tweets e retweets dos parlamentares), que iremos utilizar para os agrupamentos futuros nas perguntas. Assim:
 ```{r}
 dados_parlamentares$n_total <- dados_parlamentares$n_proprio + dados_parlamentares$n_retweet
 ```
 
-Também iremos considerar apenas parlamentares que possuam um perfil e tenham postado algo (de autoria própria ou comentando/retweetando). Sendo assim, vamos filtrar o conjunto de dados dos parlamentares:
+## 1. Qual a correlação entre o engajamento total e a quantidade de tweets dos partidos?
+Apenas explicando o tratamento feito abaixo: para manter o padrão do conjunto de dados, o engajamento total de um partido será o somatório de todos os engajamentos totais de seus parlamentares e o engajamento máximo de um partido será o máximo entre todos os engajamentos máximos de seus parlamentares. Utilizarei esse mesmo conjunto de dados para responder ao item 2.
+
+Modificando então o dataset para obtermos as métricas acima citadas e filtrando o mesmo (considerarei nessa análise apenas partidos que tenham pelo menos 1 tweet):
 ```{r}
-dados_parlamentares_filtrado = subset(dados_parlamentares, !is.na(twitter) & n_total > 0)
+dados_partidos = dados_parlamentares %>% group_by(partido) %>% summarise(tweets = sum(n_total), engaj_total_partido = sum(engaj_total), engaj_mediano_partido = median(engaj_mediano), engaj_max_partido = max(engaj_max))
+
+dados_partidos_filtrado = subset(dados_partidos, !is.na(partido) & !is.na(tweets) & tweets > 0)
 ```
 
-Fazendo o agrupamento por partido e ordenando os dados de maneira decrescente, temos:
+Analisando o gráfico que relaciona o engajamento total dos partidos e o número de tweets:
 ```{r}
-dados_partidos = dados_parlamentares %>% group_by(partido) %>% summarise(tweets = sum(n_total)) %>% arrange(desc(tweets))
+grafico_engaj_total_partido_x_tweets <- dados_partidos_filtrado %>%
+  plot_ly(
+    x = ~tweets,
+    y = ~engaj_total_partido,
+    type = "scatter",
+    mode = "markers"
+  ) %>% layout(
+    title = "Engajamento total x Número de tweets + retweets dos partidos",
+    xaxis = list(title = "Núm. tweets + retweets"),
+    yaxis = list(title = "Engajamento total")
+  )
+
+grafico_engaj_total_partido_x_tweets
+```
+Percebemos aqui que aparentemente, existe uma correleção positiva forte entre o número de conteúdo compartilhado (quantidade de tweets + retweets) e engajamento total dos partidos (i.e. quanto mais conteúdo é publicado por um partido, mais engajamento total esse conteúdo tem). Seria interessante termos um conjunto de observações (partidos) maior para podermos afirmar isso com mais segurança.
+
+Agora, vamos analisar os valores das correlações (Pearson, Spearman e Kendall) das duas variáveis, assim:
+```{r}
+dados_partidos_filtrado %>%
+  summarise(pearson = cor(tweets, engaj_total_partido, method="pearson"),
+            spearman = cor(tweets, engaj_total_partido, method="spearman"),
+            kendall = cor(tweets, engaj_total_partido, method="kendall"))
+```
+Vemos que, de fato, temos correlações fortes (i.e. com valores próximos de 1) e positiva (i.e. conforme o número de tweets cresce, o engajamento total também cresce), o que confirma a análise que foi feita no gráfico de relacionamento.
+
+### 2. Qual a correlação entre o engajamento máximo e a quantidade de tweets dos partidos?
+
+Analisando a o gráfico que relaciona o engajamento máximo dos partidos e o número de tweets:
+```{r}
+grafico_engaj_max_partido_x_tweets <- dados_partidos_filtrado %>%
+  plot_ly(
+    x = ~tweets,
+    y = ~engaj_max_partido,
+    type = "scatter",
+    mode = "markers"
+  ) %>% layout(
+    title = "Engajamento máximo x Número de tweets + retweets dos partidos",
+    xaxis = list(title = "Núm. tweets + retweets"),
+    yaxis = list(title = "Engajamento máximo")
+  )
+
+grafico_engaj_max_partido_x_tweets
+```
+Aparentemente, também temos uma correlação positiva (forte, mas provavelmente não tão forte quanto a anterior, pois temos pontos mais dispersos) entre a quantidade de conteúdo postada e o engajamento máximo dos partidos para as observações que temos. Novamente enfatizo que seria interessante que tivéssemos um conjunto de dados com mais partidos para que pudéssemos de fato validar essa correlação.
+
+Calculando as correlações (Pearson, Spearman e Kendall) entre o engajamento máximo e o total de conteúdo compartilhado dos partidos, temos:
+```{r}
+dados_partidos_filtrado %>%
+  summarise(pearson = cor(tweets, engaj_max_partido, method="pearson"),
+            spearman = cor(tweets, engaj_max_partido, method="spearman"),
+            kendall = cor(tweets, engaj_max_partido, method="kendall"))
 ```
 
-Agora, tratando um pouco o conjunto de dados dos partidos (removendo colunas NA em partido ou tweets), ordenando-o e plotando os dados:
-```{r}
-dados_partidos_filtrado = subset(dados_partidos, !is.na(partido) & !is.na(tweets))
+Aqui podemos ver novamente o que constatamos analisando o gráfico inicialmente, correlações positivas e fortes (os valores estão mais próximos de 1 do que de 0) embora não sejam tão fortes quanto às correlações vistas no item anterior, onde todas foram maior do que 0.8, por exemplo. 
 
-dados_partidos_filtrado$partido <- factor(dados_partidos_filtrado$partido, levels = unique(dados_partidos_filtrado$partido)[order(dados_partidos_filtrado$tweets, decreasing = TRUE)])
-
-grafico_partidos_x_tweets <- dados_partidos_filtrado %>% 
-  plot_ly(x = ~partido, y = ~tweets) %>%
-  layout(title = "Quantidade de tweets por partido", xaxis = list(title = "Partido"), yaxis = list(title = "Núm. tweets")) %>%
-  add_bars()
-
-grafico_partidos_x_tweets
-```
-Conseguimos observar que a quantidade de tweets por partido segue basicamente um padrão onde os maiores partidos do nosso país (como PT, PODE, PSOL) possuem uma quantidade de tweets bem superior a partidos menores como REDE, PATRI, PV, DC, PPL, conforme esperado.
+Isso pode ser um indicativo de que o engajamento máximo não está necessariamente relacionado à quantidade de tweets dos partidos em um conjunto de dados maior.

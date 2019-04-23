@@ -49,4 +49,3 @@ $ engaj_max_retweet     <dbl> 0, 0, 0, 0, 99, 0, 0, 0, 0, 0, 0, 0, NA, 4002, 422
 * engaj_max - Máximo de engajamento em um tweet.
 * engaj_max_proprio - Máximo para os de conteúdo próprio
 * engaj_max_retweet - Máximo para os retweets
-
