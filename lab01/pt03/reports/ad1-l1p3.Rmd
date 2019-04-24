@@ -80,3 +80,37 @@ grafico_partidos_x_tweets <- dados_partidos_filtrado %>%
 grafico_partidos_x_tweets
 ```
 Conseguimos observar que a quantidade de tweets por partido segue basicamente um padrão onde os maiores partidos do nosso país (como PT, PODE, PSOL) possuem uma quantidade de tweets bem superior a partidos menores como REDE, PATRI, PV, DC, PPL, conforme esperado.
+
+## 3. Qual o engajamento total médio por casa desconsiderando os parlamentares que não tem twitter?
+
+```{r }
+  dados_parlamentares %>%
+    filter(!is.na(twitter) & !is.na(engaj_total)) %>%
+    group_by(casa) %>%
+    summarize(tst = mean(engaj_total))
+```
+
+A diferença para a câmara é significativa quando desconsideramos os parlamentares que não tem twitter no cálculo da média. Ou seja, existe uma quantidade não desprezível de congressistas que não usam twitter.
+
+## 4. Questão nova: Existe uma relação entre a quantidade de seguidores e o engajamento total dos parlamentares?
+```{r warning=FALSE}
+  dados_parlamentares %>%
+    filter(!is.na(twitter) & !is.na(engaj_total)) %>%
+    ggplot(aes(x = seguidores, y = engaj_total)) + 
+    geom_point(colour = "darkgrey", size = 4)
+
+  dados_parlamentares %>%
+    filter(!is.na(twitter) & !is.na(engaj_total)) %>%
+    summarize(correlacao_pearson = cor(seguidores, engaj_total, method="pearson"),
+             correlacao_spearman = cor(seguidores, engaj_total, method="spearman"),
+             correlacao_kendall = cor(seguidores, engaj_total, method="kendall"))
+  
+  dados_parlamentares %>%
+    filter(!is.na(twitter) & !is.na(engaj_total)) %>%
+    ggplot(aes(x = seguidores, y = engaj_total)) + 
+    geom_point(colour = "darkgrey", size = 4) +
+    scale_x_log10() +
+    scale_y_log10()
+```
+Ao calcular a correlação por pearson obtivemos um valor baixo, mesmo após o tratamento dos dados (eliminação das tuplas nulas da tabela). Porém, ao calcular a correlação pelos outros coeficientes a correlação foi bem maior. Isso indica que não há uma correlação linear muito forte, mas existe correlação de outro tipo com uma magnitude bem maior.
+Ao plotar o gráfico em uma escala de log10 obtivemos uma visualização que se assemelha muito a uma reta, o que indica correlação linear. As variáveis tem uma relação polinomial, o que foi determinante para o formato do gráfico após a aplicação do log10. Essa relação é forte, positiva e polinomial.
