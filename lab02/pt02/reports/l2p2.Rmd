@@ -1,0 +1,70 @@
+---
+title: "Lab. 02 - Parte 2 - Visualização com respostas do questionário 2017 do ENADE - AD1/CDD"
+author: "André Goncalves, Francisco Edeverton"
+date: "06/05/2019"
+output: 
+  flexdashboard::flex_dashboard:
+    vertical_layout: scroll
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(here)
+library(shiny)
+library(plotly)
+theme_set(theme_bw())
+```
+
+### Dados dos cursos de ciência da computação de todo o Brasil
+Faremos a leitura do conjunto de dados das avaliações do ENADE de todos os cursos de ciência da computação do Brasil, dessa forma:
+```{r}
+cursos_ccc_brasil = read.csv(here::here("data/enade-ccc-2017.csv"))
+```
+
+### Interagindo por Estado (UF) para visualizar a média das instituições de ensino
+Criaremos uma visualização que exibirá a média nos diversos temas abordados pelo ENADE dos cursos de Ciência da Computação de todas as universidades do Brasil. O usuário pode livremente interagir com o Estado (UF), no campo abaixo:
+```{r}
+ui <- fluidPage(
+  headerPanel("Instituição x Média"),
+  
+  sidebarPanel(
+    selectInput(
+      "uf",
+      "Estado (UF)",
+      choices = cursos_ccc_brasil$UF,
+      selected = "SP"
+    ),
+  ),
+  
+  mainPanel(
+    plotlyOutput('plotCursosEstado', height = "400px"),
+    plotlyOutput('plotTemaRank', height = "400px")
+  )
+)
+
+server <- function(input, output) {
+  cursos_estado = reactive({
+    cursos_ccc_brasil %>% filter(UF == input$uf)
+  })
+  
+  output$plotCursosEstado <- renderPlotly({
+    p <- cursos_estado() %>%
+      ggplot(aes(
+        x = IES,
+        y = media,
+        text = paste("Tema:", tema),
+        color = IES
+      )) + geom_jitter()
+    
+    ggplotly(p) %>% layout(height = input$plotHeight, autosize=TRUE)
+  })
+}
+
+shinyApp(ui, server)
+```
+
+### Dados de todos os cursos da UFCG
+
