@@ -49,7 +49,7 @@ server <- function(input, output) {
   })
   
   output$trendPlot <- renderPlotly({
-    p <- ggplot(data_filt_not(), aes(x=rank, y=media)) + layer(data=data_filt_not(), geom="point", stat="identity", position="identity") +
+    p <- ggplot(data_filt_not(), aes(x=rank, y=media, text=paste("Curso: ", NOME_CURSO))) + layer(data=data_filt_not(), geom="point", stat="identity", position="identity") +
                                                          layer(data=data_filt(), geom="point", stat="identity", position="identity", aes(color='red'))
     
     ggplotly(p) %>% layout(height = input$plotHeight, autosize=TRUE)
