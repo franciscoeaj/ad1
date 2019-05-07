@@ -36,12 +36,11 @@ ui <- fluidPage(
       "Estado (UF)",
       choices = cursos_ccc_brasil$UF,
       selected = "SP"
-    ),
+    )
   ),
   
   mainPanel(
-    plotlyOutput('plotCursosEstado', height = "400px"),
-    plotlyOutput('plotTemaRank', height = "400px")
+    plotlyOutput('plotCursosEstado', height = "400px")
   )
 )
 
