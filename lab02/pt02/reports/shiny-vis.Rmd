@@ -1,0 +1,61 @@
+---
+title: "Análise ENADE"
+author: "Andre Goncalves"
+date: "May 6, 2019"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(here)
+library(plotly)
+```
+
+# Análise de Curso x Categoria
+  A partir dos dados originais do Enade, pode ser feita uma análise mais específica escolhendo um curso específico e a categoria das perguntas escolhendo a partir da interface. O intuito é conseguir comparar um curso esécífico com os demais para ver como o mesmo está em relação aos outros.
+```{r}
+data = read_csv(here("/data/enade-ufcg-2017.csv"))
+cursos = data %>% distinct(NOME_CURSO)
+categorias = data %>% distinct(categoria)
+```
+  O curso escolhido estará marcado no gráfico como um ponto vermelho, as vezes aparece mais de um ponto vermelho pois para um mesmo curso, mais de uma pergunta de mesma categoria pode ter sido respondida. Foi usado o rank do curso e media das questões para comparar num gáfico de dispersão um curso com os demais.
+```{r eruptions, echo=FALSE}
+ui <- fluidPage(
+  headerPanel("Curso x categoria"),
+  sidebarPanel(
+    selectInput("curso", label = "Cursos:",
+              choices = cursos, selected = "Engenharia (13445)"),
+  
+    selectInput("categoria", label = "Categorias:",
+              choices = categorias, selected = "Outros")
+  ),
+  mainPanel(
+    plotlyOutput('trendPlot', height = "900px")
+  )
+)
+```
+
+```{r}
+server <- function(input, output) {
+  data_filt_not <- reactive({
+    data %>% filter(categoria==input$categoria, NOME_CURSO!=input$curso)
+  })
+  
+  data_filt <- reactive({
+    data %>% filter(categoria==input$categoria, NOME_CURSO==input$curso)
+  })
+  
+  output$trendPlot <- renderPlotly({
+    p <- ggplot(data_filt_not(), aes(x=rank, y=media, text=paste("Curso: ", NOME_CURSO))) + layer(data=data_filt_not(), geom="point", stat="identity", position="identity") +
+                                                         layer(data=data_filt(), geom="point", stat="identity", position="identity", aes(color='red'))
+    
+    ggplotly(p) %>% layout(height = input$plotHeight, autosize=TRUE)
+  })
+}
+
+shinyApp(ui, server)
+```
+
