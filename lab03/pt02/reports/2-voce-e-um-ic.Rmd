@@ -41,7 +41,8 @@ Utilizaremos ICs para estimar duas métricas sobre os usuários do LastFM em ger
 
 1. Qual a proporção de novos artistas em geral escutada por usuários?
 ```{r}
-
+repeticoes = 2000
+tamanhoAmostra = 300
 
 gerar_bootstrap <- function(df, tamanhoAmostra) {
     bootstrap <- sample_n(df, size = tamanhoAmostra, replace = TRUE);
@@ -49,11 +50,12 @@ gerar_bootstrap <- function(df, tamanhoAmostra) {
     return(bootstrap)
 }
 
-teste <- gerar_bootstrap(lastfm, 300);
-glimpse(teste)
+calcula_theta <- function(col) {
+    return(mean(col))
+}
 
 reamostragens = tibble(i = 1:repeticoes) %>% 
-  mutate(theta_c_s = map_dbl(i, ~ um_bootstrap(amostra)))
+  mutate(theta_c_s = map_dbl(i, ~ calcula_theta(gerar_bootstrap(lastfm, tamanhoAmostra) %>% pull(prop_news))))
 
 reamostragens
 ```
