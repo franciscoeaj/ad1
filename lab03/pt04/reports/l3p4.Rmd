@@ -1,0 +1,22 @@
+---
+title: "AD1/CDD - Lab. 03 pt. 04"
+author: "Francisco E. Júnior, André Goncalves"
+date: "4 de junho de 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introdução
+Iremos explorar um conjunto de dados da 1a. divisão do campeonato brasileiro de futebol de 2017, no intuito de responder algumas perguntas específicas.
+
+# Perguntas
+## 1. Jogos aos domingos têm mais gols que jogos às quartas?
+```{r}
+```
+
+## 2. Jogos onde há um vitorioso têm mais ou menos gols que empates?
+```{r}
+```
