@@ -21,6 +21,7 @@ Iremos explorar um conjunto de dados da 1a. divisão do campeonato brasileiro de
 # Perguntas
 Para responder as perguntas abaixo, inicialmente iremos importar o dataset, assim:
 ```{r message=FALSE}
+set.seed(1234)
 jogos_brasileirao_2017 = readr::read_csv2(here::here("data/data.csv"))
 ```
 
@@ -62,4 +63,4 @@ jogos_brasileirao_2017 %>%
     tidy(conf.level = 0.95, 
          conf.int = TRUE)
 ```
-Podemos afirmar com 95% de confiança que nos jogos do campeonato brasileiro que jogos que terminam com um vitorioso tem mails gols (no intervalo [0.212, 0.907]) que jogos que terminam empatados. Essa variação é pouco significativa (menor que um gol).
+Podemos afirmar com 95% de confiança que nos jogos do campeonato brasileiro que jogos que terminam com um vitorioso tem mails gols (no intervalo [0.237, 0.9]) que jogos que terminam empatados. Essa variação é pouco significativa (menor que um gol).
