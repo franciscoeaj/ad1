@@ -26,8 +26,71 @@ jogos_brasileirao_2017 = readr::read_csv2(here::here("data/data.csv"))
 ```
 
 ## 1. Jogos aos domingos têm mais gols que jogos às quartas?
+### ICs
 ```{r}
+comparacao1 = jogos_brasileirao_2017 %>% filter(Dia %in% c("Domingo", "Quarta-feira"))
+
+theta_gols <- function(data, i) {
+    agrupado = data %>% 
+        slice(i) %>% 
+        group_by(Dia) %>% 
+        summarise(gols = mean(gols))
+    
+    domingos = agrupado %>% filter(Dia == "Domingo") %>% pull(gols)
+    quartas = agrupado %>% filter(Dia == "Quarta-feira") %>% pull(gols)
+    domingos - quartas
+}
+
+theta_gols(comparacao1, i = 1:NROW(comparacao1))
 ```
+
+```{r}
+ci1 = boot(data = comparacao1,
+           statistic = theta_gols,
+           R = 2000) %>%
+    tidy(conf.level = .95,
+         conf.method = "bca",
+         conf.int = TRUE)
+ci1
+```
+
+### Testes de Hipótese
+```{r}
+domingos_quartas = jogos_brasileirao_2017 %>% filter(Dia %in% c("Domingo", "Quarta-feira"))
+
+theta_embaralhado = function(d){
+    dias = d %>% 
+        mutate(dia_embaralhado = sample(Dia, n())) %>% 
+        group_by(dia_embaralhado) %>% 
+        summarise(gols = mean(gols)) 
+    
+    domingos = dias %>% filter(dia_embaralhado == "Domingo") %>% pull(gols)
+    quartas = dias %>% filter(dia_embaralhado == "Quarta-feira") %>% pull(gols)
+    
+    domingos - quartas
+}
+
+theta_embaralhado(domingos_quartas)
+```
+
+```{r}
+diffs1 = replicate(5000, {theta_embaralhado(domingos_quartas)})
+
+tibble(diferenca = diffs1) %>% 
+  ggplot(aes(x = diferenca)) + 
+  # geom_histogram(binwidth = .2, fill = "white", color = "darkgreen") + 
+    geom_density(fill = "white", color = "darkgreen") + 
+  geom_vline(xintercept = theta_gols(domingos_quartas, 1:NROW(domingos_quartas)), color = "orange") + 
+  geom_vline(xintercept = - theta_gols(domingos_quartas, 1:NROW(domingos_quartas)), color = "orange") + 
+  geom_rug()
+```
+
+```{r}
+mean(abs(diffs1) >= abs(theta_gols(domingos_quartas, 1:NROW(domingos_quartas))))
+```
+
+### Comparação
+  Comparando as respostas dos dois métodos, podemos ver que elas concordam entre si, por testes de hipóstese foi calculado um p valor de 0.96, que é alto e significa que não se descarta a hipótese nula, ou seja o resultado é pouco significante. Para esse valor de p valor podemos concluir também que o 0 estará dentro do intervalo de confiança e que o intervalo será pequeno, e para a análise de intervalo de confiança vemos que isso acontece, com um intervalo de confiança [-0.446; 0.41] com 95% de confiança, que significa que se há uma diferença entre os gols no domingo com os da quarta ela é insignificante (menos de 0.5 gols de diferença) com 95% de confiança. Olhando para análise com intervalo de confiança vemos que ela traz mais informações que a de teste de hipótese, pois além de dizer se o resultado é significante ou não, a análise traz também o intervalo de confiança. Portanto uma diferença de gols entre os domingos e as quartas, em média, pode existir, mas caso exista é muito pequena, insignificante.
 
 ## 2. Jogos onde há um vitorioso têm mais ou menos gols que empates?
 Adicionando uma coluna para identificar se um determinado jogo foi empate ou não:
