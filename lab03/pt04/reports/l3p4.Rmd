@@ -7,12 +7,20 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(here)
 ```
 
 # Introdução
 Iremos explorar um conjunto de dados da 1a. divisão do campeonato brasileiro de futebol de 2017, no intuito de responder algumas perguntas específicas.
 
 # Perguntas
+Para responder as perguntas abaixo, inicialmente iremos importar o dataset, assim:
+```{r}
+jogos_brasileirao_2017 = readr::read_csv2(here::here())
+```
+
 ## 1. Jogos aos domingos têm mais gols que jogos às quartas?
 ```{r}
 ```
