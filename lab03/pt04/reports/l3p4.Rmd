@@ -127,3 +127,35 @@ jogos_brasileirao_2017 %>%
          conf.int = TRUE)
 ```
 Podemos afirmar com 95% de confiança que nos jogos do campeonato brasileiro que jogos que terminam com um vitorioso tem mails gols (no intervalo [0.237, 0.9]) que jogos que terminam empatados. Essa variação é pouco significativa (menor que um gol).
+
+Agora, vamos fazer a mesma análise utilizando testes de hipótese.
+```{r}
+theta_embaralhado_empates = function(d) {
+    gols = d %>% 
+        mutate(empates_embaralhado = sample(Empate, n())) %>% 
+        group_by(empates_embaralhado) %>% 
+        summarise(media_gols = mean(gols)) 
+    
+    media_gols_vitoriosos = gols %>% filter(empates_embaralhado == FALSE) %>% pull(media_gols)
+    media_gols_empates = gols %>% filter(empates_embaralhado == TRUE) %>% pull(media_gols)
+    
+    media_gols_vitoriosos - media_gols_empates
+}
+
+theta_embaralhado_empates(jogos_brasileirao_2017)
+```
+
+```{r}
+diffs2 = replicate(5000, {theta_embaralhado_empates(jogos_brasileirao_2017)})
+
+tibble(diferenca = diffs2) %>% 
+  ggplot(aes(x = diferenca)) + 
+    geom_density(fill = "white", color = "darkgreen") + 
+  geom_vline(xintercept = theta_diff_gols(jogos_brasileirao_2017, 1:NROW(jogos_brasileirao_2017)), color = "orange") + 
+  geom_vline(xintercept = - theta_diff_gols(jogos_brasileirao_2017, 1:NROW(jogos_brasileirao_2017)), color = "orange") + 
+  geom_rug()
+```
+
+```{r}
+mean(abs(diffs2) >= abs(theta_diff_gols(jogos_brasileirao_2017, 1:NROW(jogos_brasileirao_2017))))
+```
