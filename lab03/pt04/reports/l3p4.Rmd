@@ -2,7 +2,13 @@
 title: "AD1/CDD - Lab. 03 pt. 04"
 author: "Francisco E. Júnior, André Goncalves"
 date: "4 de junho de 2019"
-output: html_document
+output:
+    html_document:
+      df_print: paged
+      toc: true
+      toc_float:
+        collapsed: false
+theme: sandstone
 ---
 
 ```{r setup, include=FALSE}
@@ -26,7 +32,7 @@ jogos_brasileirao_2017 = readr::read_csv2(here::here("data/data.csv"))
 ```
 
 ## 1. Jogos aos domingos têm mais gols que jogos às quartas?
-### ICs
+### 1.a. ICs
 ```{r}
 comparacao1 = jogos_brasileirao_2017 %>% filter(Dia %in% c("Domingo", "Quarta-feira"))
 
@@ -54,7 +60,7 @@ ci1 = boot(data = comparacao1,
 ci1
 ```
 
-### Testes de Hipótese
+### 1.b. Testes de Hipótese
 ```{r}
 domingos_quartas = jogos_brasileirao_2017 %>% filter(Dia %in% c("Domingo", "Quarta-feira"))
 
@@ -78,7 +84,6 @@ diffs1 = replicate(5000, {theta_embaralhado(domingos_quartas)})
 
 tibble(diferenca = diffs1) %>% 
   ggplot(aes(x = diferenca)) + 
-  # geom_histogram(binwidth = .2, fill = "white", color = "darkgreen") + 
     geom_density(fill = "white", color = "darkgreen") + 
   geom_vline(xintercept = theta_gols(domingos_quartas, 1:NROW(domingos_quartas)), color = "orange") + 
   geom_vline(xintercept = - theta_gols(domingos_quartas, 1:NROW(domingos_quartas)), color = "orange") + 
@@ -89,10 +94,11 @@ tibble(diferenca = diffs1) %>%
 mean(abs(diffs1) >= abs(theta_gols(domingos_quartas, 1:NROW(domingos_quartas))))
 ```
 
-### Comparação
+### 1.c. Comparação
   Comparando as respostas dos dois métodos, podemos ver que elas concordam entre si, por testes de hipóstese foi calculado um p valor de 0.96, que é alto e significa que não se descarta a hipótese nula, ou seja a diferença é muito pouco significante. Para a análise de intervalo de confiança é visto que a diferença de gols também é pouco significante, com um intervalo de confiança [-0.446; 0.41] com 95% de confiança, que significa que se há uma diferença entre os gols no domingo com os da quarta ela é insignificante (menos de 0.5 gols de diferença) com 95% de confiança. Olhando para análise com intervalo de confiança vemos que ela traz mais informações que a de teste de hipótese, pois além de dizer se o resultado é significante ou não, a análise traz também o intervalo de confiança com sua magnitude. Portanto uma diferença de gols entre os domingos e as quartas, em média, pode existir, mas caso exista é muito pequena, insignificante.
 
 ## 2. Jogos onde há um vitorioso têm mais ou menos gols que empates?
+### 2.a. ICs
 Adicionando uma coluna para identificar se um determinado jogo foi empate ou não:
 ```{r}
 foi_empate = function(col) {col == 'Empate'}
@@ -126,8 +132,9 @@ jogos_brasileirao_2017 %>%
     tidy(conf.level = 0.95, 
          conf.int = TRUE)
 ```
-Podemos afirmar com 95% de confiança que nos jogos do campeonato brasileiro que jogos que terminam com um vitorioso tem mails gols (no intervalo [0.237, 0.9]) que jogos que terminam empatados. Essa variação é pouco significativa (menor que um gol).
+Podemos afirmar, com 95% de confiança, que nos jogos do campeonato brasileiro que terminam com um vitorioso ocorrem mais gols (no intervalo [0.237, 0.9]) quando comparamos com jogos que terminam empatados. Essa variação é pouco significativa (i.e. menor que um gol).
 
+### 2.b. Teste de Hipotése
 Agora, vamos fazer a mesma análise utilizando testes de hipótese.
 ```{r}
 theta_embaralhado_empates = function(d) {
@@ -159,3 +166,7 @@ tibble(diferenca = diffs2) %>%
 ```{r}
 mean(abs(diffs2) >= abs(theta_diff_gols(jogos_brasileirao_2017, 1:NROW(jogos_brasileirao_2017))))
 ```
+Notamos um p-valor extremamente baixo (0.0022), o que faz com que possamos desconsiderar a hipótese nula (i.e. a hipótese de que não há diferença de gols em jogos que terminam com vitoriosos ou empatados).
+
+### 2.c. Comparação
+Notamos novamente que as análises feitas em Intervalo de Confiança e Teste de Hipótese concordam entre si, pois temos uma diferença positiva de gols no IC (no intervalo [0.237, 0.9], note que o 0 não está no intervalo) para jogos que terminam com vitória para algum dos times. E temos nosso p-valor (ou significância) bem baixo (0.0022), que faz com que possamos desconsiderar a hipótese nula.
