@@ -15,15 +15,15 @@ library(ggplot2)
 ```
 
 # 1. Introdução
-Iremos criar um modelo para tentar explicar o preço final de um leilão em relação ao número de lances dados.
+Iremos criar alguns modelos para tentar explicar o preço final de um leilão de um cartucho de Mario Kart em relação a algumas outras variáveis do nosso conjunto de dados:
 
 # 2. Analisando os dados
-
 Vamos primeiro importar os dados:
 ```{r message=FALSE}
 dados_mariokart = readr::read_tsv(here::here("data/data.txt"))
 ```
 
+## 2.1. Explicando o preço relacionando com nBids
 Agora vamos visualizar as variáveis que queremos relacionar com o modelo, assim:
 ```{r}
 dados_mariokart %>% ggplot(aes(y = totalPr, x = nBids)) + geom_point()
@@ -49,6 +49,7 @@ glance(dados_mariokart.lm)
 ```
 Vemos um r2 no valor próximo de 0,006. Isso nos diz que o modelo de regressão criado explica muito pouco os dados.
 
+## 2.2. Explicando o preço relacionando com aumento (preço final - preço inicial)
 Iremos realizar a coluna "aumento" nos dados, que é dada pela do valora final e inicial do leilão.
 ```{r}
 dados_mariokart.aumento = dados_mariokart %>% mutate(aumento = totalPr - startPr)
@@ -73,4 +74,24 @@ Criando um IC para inferirmos sobre a população dos dados (todos os leilões d
 tidy(dados_mariokart.aumento.lm,
      conf.int = TRUE,
      conf.level = .95) %>% select(-p.value)
+```
+
+## 2.3. Explicando o preço relacionando com stockPhoto
+Vamos visualizar a relação entre as variáveis "totalPr" e "stockPhoto", assim:
+```{r}
+dados_mariokart %>% ggplot(aes(y = totalPr, x = stockPhoto)) + geom_jitter(width = .3, alpha = .6)
+```
+
+E agora, vamos criar o modelo, dessa forma:
+```{r}
+dados_mariokart.stockPhoto.lm = dados_mariokart %>% lm(formula = totalPr ~ stockPhoto)
+
+tidy(dados_mariokart.stockPhoto.lm)
+glance(dados_mariokart.stockPhoto.lm)
+```
+
+## 2.4. Explicando o preço relacionando com a condição do cartucho (novo ou usado)
+Vamos visualizar a relação entre as variáveis "totalPr" e "cond", assim:
+```{r}
+dados_mariokart %>% ggplot(aes(y = nBids, x = stockPhoto)) + geom_jitter(width = .3, alpha = .6)
 ```
