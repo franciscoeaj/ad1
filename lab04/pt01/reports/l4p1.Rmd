@@ -1,0 +1,76 @@
+---
+title: "AD1/CDD - Lab. 04 - Parte 01"
+author: "Francisco E. Júnior"
+date: "11 de junho de 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(broom)
+library(modelr)
+library(ggplot2)
+```
+
+# 1. Introdução
+Iremos criar um modelo para tentar explicar o preço final de um leilão em relação ao número de lances dados.
+
+# 2. Analisando os dados
+
+Vamos primeiro importar os dados:
+```{r message=FALSE}
+dados_mariokart = readr::read_tsv(here::here("data/data.txt"))
+```
+
+Agora vamos visualizar as variáveis que queremos relacionar com o modelo, assim:
+```{r}
+dados_mariokart %>% ggplot(aes(y = totalPr, x = nBids)) + geom_point()
+```
+
+Percebemos alguns outliers, que são os pontos com totalPr maior que 100. Um deles é uma venda de 5 cartuchos e o outro é de um videogame, como esses pontos não condizem com nosso conjunto de dados, iremos removê-los, assim:
+```{r}
+dados_mariokart = dados_mariokart %>% filter(totalPr <= 100)
+```
+
+Visualizando novamente o conjunto de dados:
+```{r}
+dados_mariokart %>% ggplot(aes(y = totalPr, x = nBids)) + geom_point()
+```
+Percebemos que os pontos estão bem distribuídos pelo gráfico, dessa forma, qualquer modelo de regressão linear simples pouco irá se adaptar aos dados, pois a reta estará distante da maioria dos pontos.
+
+Criando o modelo e visualizando os resultados:
+```{r}
+dados_mariokart.lm = dados_mariokart %>% lm(formula = totalPr ~ nBids)
+
+tidy(dados_mariokart.aumento.lm)
+glance(dados_mariokart.lm)
+```
+Vemos um r2 no valor próximo de 0,006. Isso nos diz que o modelo de regressão criado explica muito pouco os dados.
+
+Iremos realizar a coluna "aumento" nos dados, que é dada pela do valora final e inicial do leilão.
+```{r}
+dados_mariokart.aumento = dados_mariokart %>% mutate(aumento = totalPr - startPr)
+```
+
+Agora vamos visualizar a relação entre as variáveis "aumento" e "nBids", assim:
+```{r}
+dados_mariokart.aumento %>% ggplot(aes(y = aumento, x = nBids)) + geom_point()
+```
+Nessa visualização podemos perceber que há uma correlação crescente (aparentemente não muito forte) entre as variáveis, vamos criar o modelo e visualizar os resultados:
+
+```{r}
+dados_mariokart.aumento.lm = dados_mariokart.aumento %>% lm(formula = aumento ~ nBids)
+
+tidy(dados_mariokart.aumento.lm)
+glance(dados_mariokart.aumento.lm)
+```
+Vemos um r2 de 36%, o que significa dizer que o modelo de regressão linear criado se ajusta melhor aos dados quando comparamos com o modelo anterior que explica totalPr ~ nBids.
+
+Criando um IC para inferirmos sobre a população dos dados (todos os leilões de cartuchos de Mario Kart):
+```{r}
+tidy(dados_mariokart.aumento.lm,
+     conf.int = TRUE,
+     conf.level = .95) %>% select(-p.value)
+```
