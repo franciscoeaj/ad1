@@ -1,6 +1,7 @@
 ---
-title: "Implementando ICs"
-author: "Nazareno"
+title: "AD1/CDD - Lab. 03, parte 02 - Implementando ICs"
+author: "Francisco Edeverton de Almeida Júnior"
+date: "14 de julho de 2019"
 output:
   html_document:
     theme: readable
@@ -16,6 +17,9 @@ output:
 ```{r setup, include=FALSE, message=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(boot)
+library(broom)
+library(plotly)
 theme_set(theme_bw())
 ```
 
@@ -38,27 +42,246 @@ glimpse(lastfm)
 ## Proporção de artistas novos e popularidade
 
 Utilizaremos ICs para estimar duas métricas sobre os usuários do LastFM em geral durante um período de 6 meses. Em ambos os casos faremos isso a partir de uma amostra de 300 usuários. As duas métricas são: 
+  1. Qual a proporção de novos artistas em geral escutada por usuários?
+  2. Para os usuários que gostam de música muito pop (mediana_pop > 5), qual a correlação entre a popularidade mediana dos artistas escutado e a proporção dos artistas escutados que eram novos. 
 
-1. Qual a proporção de novos artistas em geral escutada por usuários?
+## Perguntas
+Os questionamentos levantados serão respondidos nos itens abaixo
+
+### 1. Qual a proporção de novos artistas em geral escutada por usuários?
+A média da proporção de novos artistas em geral escutada pelos usuários é dada pela variável theta_c:
 ```{r}
-repeticoes = 2000
-tamanhoAmostra = 300
+set.seed(9098)
 
-gerar_bootstrap <- function(df, tamanhoAmostra) {
-    bootstrap <- sample_n(df, size = tamanhoAmostra, replace = TRUE);
-    bootstrap <- bootstrap %>% mutate(prop_news = news / (old + news))
-    return(bootstrap)
-}
+theta_c = lastfm %>% 
+    mutate(news_prop = news/(news + old)) %>%
+    pull(news_prop) %>%
+    mean()
 
-calcula_theta <- function(col) {
-    return(mean(col))
+theta_c
+```
+
+Aplicando a técnica de bootstrap (com 3000 repetições) para calcular a média da proporção de artistas novos de amostras aleatórias retiradas da amostra principal, temos:
+```{r}
+set.seed(9098)
+
+repeticoes = 3000
+
+bootstrap_q1 <- function(ds) {
+  ds = ds %>% mutate(news_prop = news/(news + old))
+  news_prop = ds %>% pull(news_prop)
+  bootstrap <- sample(news_prop, size = NROW(news_prop), replace = TRUE)
+  
+  return(mean(bootstrap))
 }
 
 reamostragens = tibble(i = 1:repeticoes) %>% 
-  mutate(theta_c_s = map_dbl(i, ~ calcula_theta(gerar_bootstrap(lastfm, tamanhoAmostra) %>% pull(prop_news))))
-
-reamostragens
+  mutate(theta_c_s = map_dbl(i, ~ bootstrap_q1(lastfm)))
 ```
-2. Para os usuários que gostam de música muito pop (mediana_pop > 5), qual a correlação entre a popularidade mediana dos artistas escutado e a proporção dos artistas escutados que eram novos. 
 
-Crie intervalos com 95% de confiança.
+Agora, vamos visualizar as reamostragens que obtivemos:
+```{r}
+set.seed(9098)
+
+graf_reamostragens_q1 = reamostragens %>%
+  ggplot(aes(x = theta_c_s)) +
+  geom_histogram(binwidth = .00125,
+                 fill = "pink",
+                 colour = "black")
+
+ggplotly(graf_reamostragens_q1)
+```
+Pela visualização acima, além de percebermos que o gráfico segue uma distribuição normal, vemos que a maioria das médias das reamostras estão entre 24 e 26%.
+
+Agora, calculando o intervalo de confiança (IC):
+```{r}
+set.seed(9098)
+
+ic_q1 = reamostragens %>% 
+  mutate(erro = theta_c_s - theta_c) %>% 
+  summarise(erro_i = quantile(erro, .05), 
+            erro_s = quantile(erro, .95))
+
+ic_q1 = ic_q1 %>% 
+  mutate(valor_i = theta_c + erro_i, 
+         valor_s = theta_c + erro_s)
+
+
+ic_q1
+```
+
+Agora, vamos visualizar o IC (obtido com a técnica de bootstrap):
+```{r}
+set.seed(9098)
+
+graf_ic_q1 = ggplot() +
+  geom_rect(
+    data = ic_q1,
+    aes(xmin = valor_i, xmax = valor_s),
+    ymin = -Inf,
+    ymax = Inf,
+    fill = "lightgreen",
+    alpha = .25
+  ) +
+  geom_histogram(
+    data = reamostragens,
+    aes(theta_c_s),
+    binwidth = .0015,
+    fill = "pink",
+    colour = "black"
+  ) +
+  geom_vline(xintercept = theta_c, color = "blue")
+
+graf_ic_q1
+```
+Dessa forma, podemos afirmar com 95% de confiança que, com uma amostra de 300 itens, a média populacional da proporção de novos artistas escutados pelos usuários será estimada entre 23,76 e 25,97%.
+
+Agora, vamos comparar o resultado obtido com um bootstrapper já implementado pela biblioteca boot:
+```{r}
+set.seed(9098)
+
+theta <- function(d, i) {
+    d = d %>% slice(i) %>%
+        mutate(news_prop = news/(news + old)) %>% 
+        summarise(media = mean(news_prop))
+    
+    m = d %>% pull(media)
+    m
+}
+
+booted = boot(data = lastfm,
+              statistic = theta,
+              R = 3000)
+
+ci = tidy(booted, 
+          conf.level = .95,
+          conf.method = "bca",
+          conf.int = TRUE)
+
+glimpse(ci)
+```
+Utilizando um bootstrapper já implementado podemos ver que, com 95% de confiança, a média populacional da proporção de novos artistas escutados pelos usuários será estimada entre 23,56 e 26,16%. Esse intervalo obtido com um bootstrapper já implementado condiz com o que obtivemos previamente.
+
+### 2. Para os usuários que gostam de música muito pop (mediana_pop > 5), qual a correlação entre a popularidade mediana dos artistas escutado e a proporção dos artistas escutados que eram novos. 
+Primeiramente, filtrando nossos dados (apenas usuários com mediana_pop > 5):
+```{r}
+lastfm_q2 = lastfm %>% filter(mediana_pop > 5)
+```
+
+```{r}
+theta_q2 <- function(ds) {
+    ds = ds %>% mutate(news_prop = news/(news + old))
+    
+    c <- cor(ds$news_prop, ds$mediana_pop)
+    return(c)
+}    
+
+theta_c = theta_q2(lastfm_q2)
+
+theta_c
+```
+Como o valor obtido é próximo de zero, aparentemente não há nenhuma correlação.
+
+Vamos agora visualizar um gráfico correlacionando as variáveis:
+```{r}
+lastfm_q2 %>% mutate(news_prop = news/(news + old)) %>%
+    ggplot(aes(x = news_prop, y = mediana_pop)) + 
+    geom_point()
+```
+Vemos pontos muito dispersos, a correlação entre a popularidade mediana dos artistas escutado e a proporção dos artistas escutados que eram novos é baixa.
+
+Realizando o bootstrapping:
+```{r}
+set.seed(9098)
+
+repeticoes = 3000
+
+bootstrap_q2 <- function(ds) {
+  ds = ds %>% mutate(news_prop = news/(news + old))
+  
+  bootstrap <- sample_n(ds, 
+                        size = NROW(news_prop), 
+                        replace = TRUE)
+  
+  return(cor(bootstrap$news_prop, bootstrap$mediana_pop))
+}
+
+reamostragens = tibble(i = 1:repeticoes) %>% 
+    mutate(theta_c_s = map_dbl(i, ~ bootstrap_q2(lastfm_q2)))
+
+graf_reamostragens_q2 = reamostragens %>%
+  ggplot(aes(x = theta_c_s)) +
+  geom_histogram(binwidth = .01,
+                 colour = "black",
+                 fill = "pink")
+
+ggplotly(graf_reamostragens_q2)
+```
+Como há menos elementos em cada classe ocorreram mais resultados diferentes quando comparamos com a visualização das reamostragens feitas na questão anterior. Percebe-se também que a correlação é próxima bem próxima de 0 em todas as reamostragens.
+
+Calculando o IC:
+```{r}
+set.seed(9098)
+
+ic_q2 = reamostragens %>% 
+  mutate(erro = theta_c_s - theta_c) %>% 
+  summarise(erro_i = quantile(erro, .05), 
+            erro_s = quantile(erro, .95))
+
+ic_q2 = ic_q2 %>% 
+  mutate(valor_i = theta_c + erro_i, 
+         valor_s = theta_c + erro_s)
+
+
+ic_q2
+```
+
+Visualizando esse IC:
+```{r}
+graf_ic_q2 = ggplot() +
+  geom_rect(
+    data = ic_q2,
+    aes(xmin = valor_i, xmax = valor_s),
+    ymin = -Inf,
+    ymax = Inf,
+    fill = "lightgreen",
+    alpha = .25
+  ) +
+  geom_histogram(
+    data = reamostragens,
+    aes(theta_c_s),
+    binwidth = .01,
+    fill = "pink",
+    colour = "black"
+  ) +
+  geom_vline(xintercept = theta_c, color = "blue")
+
+graf_ic_q2
+```
+Observamos com 95% de confiança que, a correlação entre a popularidade mediana dos artistas escutado e a proporção dos artistas escutados que eram novos está estimada entre -0,2 e 0,026. Como esse intervalo contém o valor 0, pode-se afirmar que, caso a correlação exista (pode acontecer da correlação ser zero), ela é bem próximo de zero.
+
+Agora, vamos comparar utilizando o bootstrapper da biblioteca boot:
+```{r}
+set.seed(9098)
+
+theta <- function(d, i) {
+    d = d %>% slice(i) %>%
+        mutate(news_prop = news/(news + old)) %>% 
+        summarise(cor = cor(news_prop, mediana_pop))
+    
+    c = d %>% pull(cor)
+    c
+}
+
+booted = boot(data = lastfm_q2,
+              statistic = theta,
+              R = 3000)
+
+ci = tidy(booted, 
+          conf.level = .95,
+          conf.method = "bca",
+          conf.int = TRUE)
+
+glimpse(ci)
+```
+Com um bootstrapper já implementado, obtemos que, com 95% de confiança, a correlação entre a popularidade mediana dos artistas escutado e a proporção dos artistas escutados que eram novos está estimada entre -0,23 e 0,041%. Novamente percebemos que o zero está contido no intervalo, o que indica que a correlação pode não existir ou ser muito baixa.

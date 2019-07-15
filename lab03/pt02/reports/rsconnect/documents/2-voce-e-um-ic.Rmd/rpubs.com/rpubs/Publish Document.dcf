@@ -1,0 +1,10 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/512705/8256364d180943b6afed832de7462a30
+bundleId: https://api.rpubs.com/api/v1/document/512705/8256364d180943b6afed832de7462a30
+url: http://rpubs.com/franciscoeaj/512705/edit
+when: 1563169344.35277
